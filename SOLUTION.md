@@ -1,14 +1,23 @@
 
 # Movie-C Solution
 
-**MovieC** as an aggregator platform that calculates an aggregate version of movies from different data sources. The choose architecture is using web architecture with event driven capabilities. 
+
+**MovieC** as an aggregator platform that calculates an aggregate version of movies from different data sources. Is using web with event driven capabilities architecture. 
+
+## Assumptions
+
+The system is desigined based in the following assumptions:
+
+- A movie is update regularly by each data source. 
+- The movies contains a unique id that is shared through all data sources. (movie_id)
+- MovieC works as a broker for information for another websites.
 
 ## Architecture
 
 The architecture is divided in 3 systems:
 
 - [web system](#architecture-web)
-- [extractor](#architure-extractor)
+- [extractor](#architecture-extractor)
 - [aggregator](#architecture-agregator)
 
 ### Architecture Web
@@ -20,9 +29,11 @@ Also one key advantage is that the core aggregation mechanism is not part of the
 ```plantuml
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
 
+
 System_Boundary(c1, "MovieC Core System") {
+    Container(website, "Movie-C Website", "Movie-C")
     Container(api, "MovieC API", "Backend API for accesing RE Database")
-    ContainerDb(db, "Database MovieC", "RE", "Movie Aggregated information")
+    ContainerDb(db, "Database Movie-C", "RE", "Movie Aggregated information")
     ContainerDb(bucket, "Data Assets", "files", "Movie Assets")
     Rel(api, db, "sql", "request movie information")
     Rel(api, bucket, "s3", "request movie asset")
@@ -34,7 +45,7 @@ System_Boundary(c1, "MovieC Core System") {
 - **API**: it contains the backend and the apis that support the web page. 
 - **Website**: contains all the assets for web distribution through a web browser. 
 
-### Architure Extractor
+### Architecture Extractor
 
 The Extractor gets the data from data sources and transform in entites that can be used for aggregation.
 
@@ -45,7 +56,7 @@ For creating such process we need to introduce certain concepts that allow us to
 ```python
 def get_movie_id(args)
     # return a movie id. 
-    return args["title"] 
+    return args["id"]
 ```
 A `movie id` is an id that can be used for matching movies in all data sources. 
 
