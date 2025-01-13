@@ -1,0 +1,20 @@
+@startuml Sequence of Update
+
+
+data_source -> extractor_for_source : There is an update from data source x
+extractor_for_source -> extractor_for_source : Iterate through all the information from source x and created Movie(entities)
+extractor_for_source -> extractor_for_source : Validate Movie Entity (for empty information)
+extractor_for_source -> aggregator_storage: Storage Movie Entities.
+aggregator_storage -> extractor_for_source
+extractor_for_source --> movie_aggregator:  Notified that there is a changed in source x for single movie.
+movie_aggregator -> aggregator_storage: Get the data for movie from all the data sources stored in storage
+aggregator_storage -> movie_aggregator
+alt for each field 
+    movie_aggregator -> movie_aggregator: execute rule for filling field
+end
+
+movie_aggregator -> movie_aggregator: Calculate aggregated scored
+
+movie_aggregator -> movie_database: Stored (update, created) movie in database.
+
+@enduml

@@ -1,0 +1,21 @@
+
+@startuml Extractor Architecture
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+System_Boundary(c2, "Data Source") {
+    Container(source, "Data Source X")
+}
+
+System_Boundary(c1, "Movie Data Extractor") {
+    Container(engine, "Extractor for Source X", "Only is executed when there is a changed in the original data source")
+    ContainerDb(db_aggregator, "Data Storage", "Bucket", "Store the metadata information from a data source")
+   
+    Rel(engine, db_aggregator, "file", "Check if there are changes or is new")
+
+}
+
+ContainerDb(movie_update_events, "MQ", "Movie Update Events")
+
+Rel(engine, movie_update_events, "MS", "Push there is an update for movie('A')")
+Rel(c2, c1, "Get Updates from Source (Event)")
+@enduml

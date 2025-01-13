@@ -26,24 +26,14 @@ I choose to use a web architecture because allow to centralize business logic in
 
 Also one key advantage is that the core aggregation mechanism is not part of the web system making it more robust to failure from the aggregator system
 
-```plantuml
-!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
-
-
-System_Boundary(c1, "MovieC Core System") {
-    Container(website, "Movie-C Website", "Movie-C")
-    Container(api, "MovieC API", "Backend API for accesing RE Database")
-    ContainerDb(db, "Database Movie-C", "RE", "Movie Aggregated information")
-    ContainerDb(bucket, "Data Assets", "files", "Movie Assets")
-    Rel(api, db, "sql", "request movie information")
-    Rel(api, bucket, "s3", "request movie asset")
-}
-```
+![web](docs/Web%20Architecture.png "Web Architecture")
 
 - **Database**: Saved all the data need by the system to stored the aggregated information from all the data sources
 - **Bucket**: Store assets like images, or small videos or trailers if is need it. 
 - **API**: it contains the backend and the apis that support the web page. 
 - **Website**: contains all the assets for web distribution through a web browser. 
+
+**Notes**: Using a relation database we can protect the data updates by accesing only through API.
 
 ### Architecture Extractor
 
@@ -68,28 +58,7 @@ Note: This is going to cover the majority of the movies, but there is always goi
 
 We can define the same blueprint for all data sources pipeline:
 
-```plantuml
-@startuml Movie C
-!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
-
-System_Boundary(c2, "Data Source") {
-    Container(source, "Data Source X")
-}
-
-System_Boundary(c1, "Movie Data Extractor") {
-    Container(engine, "Extractor for Source X", "Only is executed when there is a changed in the original data source")
-    ContainerDb(db_aggregator, "Data Storage", "Bucket", "Store the metadata information from a data source")
-   
-    Rel(engine, db_aggregator, "file", "Check if there are changes or is new")
-
-}
-
-ContainerDb(movie_update_events, "MQ", "Movie Update Events")
-
-Rel(engine, movie_update_events, "MS", "Push there is an update for movie('A')")
-Rel(c2, c1, "Get Updates from Source (Event)")
-@enduml
-```
+![extractor](docs/Extractor%20Architecture.png "Extractor Architecture")
 
 The source updates can be trigger by an SFTP server or by an scheduler. This can be implemented using technologies like S3 where we can trigger a serverless function when an update happened in one file in the bucket.
 
@@ -97,22 +66,8 @@ Note: For big updates like the first runs, (big csv files for example) in a data
 
 *All data sources needs to follow the same schema*, This allow the system to compare data sources that has similar data and also define what information is strictly important for been able to use it in the aggregation algorithm. This schema is going to define what is a movie in the system:
 
-```plantuml
-    class Movie {
-        source : Where is this information coming (IMDB, Rotten Tomatoes)
-        source_id: unique id of the movie for data source
-        title : Original title.
-        country_of_origin: Country of where the movie was made
-        source_rating[] : All the ratings that has the data source for movie
-        registration_date: When was the movie registered in the movie database
-        names[] : All the possible names that movie has in different lenguajes
-        genres[] : Movie genres
-        crating_performance: C-Rating for Performance  
-        crating_soundtrack: C-Rating for Soundtrack
-        crating_screenplay: C-Rating for ScreenPlay
-        ..another metadata
-    }
-```
+![class_movie](docs/Class%20Movie.png "Class Movie")
+
 
 - Each data sources saves the movie information in the `Aggregated Storage`. 
 - Each time there is a **changed** in the data the system is notified through an event `notified_movie_has_updates('movie_id')`. 
@@ -121,17 +76,11 @@ Note: For big updates like the first runs, (big csv files for example) in a data
 
 The aggregator is the main part of the sytem that calculates the final scored of a movie. It contains the aggregator algorithm that is going to be used for calculating the final score. 
 
-```plantuml
-!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
 
-System_Boundary(c3, "Movie Data Aggregator") {
-    Container(aggregator_engine, "Aggregator", "Only is executed when there is a changed in the original data source")
-    ContainerDb(movie_update_events, "MQ", "Movie Update Events")
-    Rel(movie_update_events, aggregator_engine, "Get updates for movies")
-}
-```
+![aggregator](docs/Aggregator%20Architecture.png "Aggregator Architecture")
 
-The aggregator algorithm containes all the rules that are define for each data source and each field to populate a movie entity and stored in db.
+
+The aggregator algorithm containes all the rules that are define for each data source and each field to populate a movie entity and stored in db. 
 
 ```python
     def get_info_for_movie(movie_id)
@@ -153,28 +102,17 @@ The aggregator algorithm containes all the rules that are define for each data s
 
 Here we can see how an update of a source goes through all the systems:
 
-```plantuml
+![sequnece](docs/Sequence%20of%20Update.png "Sequence")
 
-data_source -> extractor_for_source : There is an update from data source x
-extractor_for_source -> extractor_for_source : Iterate through all the information from source x and created Movie(entities)
-extractor_for_source -> extractor_for_source : Validate Movie Entity (for empty information)
-extractor_for_source -> aggregator_storage: Storage Movie Entities.
-aggregator_storage -> extractor_for_source
-extractor_for_source --> movie_aggregator:  Notified that there is a changed in source x for single movie.
-movie_aggregator -> aggregator_storage: Get the data for movie from all the data sources stored in storage
-aggregator_storage -> movie_aggregator
-alt for each field 
-    movie_aggregator -> movie_aggregator: execute rule for filling field
-end
-
-movie_aggregator -> movie_aggregator: Calculate aggregated scored
-
-movie_aggregator -> movie_database: Stored (update, created) movie in database.
-```
 
 ## Notes in Implementation
 
-The system can be implemented using airflow as a main engine for running extraction But for runing the aggregation is suggested to used a message queue that ensure the order of the updates. This allow to be a more robust system where we can try and re-try operations without putting in risk consistency of the data. This event can be listen by a serverless function that can run the aggregated algorithm and saved the result in database. 
+The system can be implemented using airflow or lambda functions as a main engine for running extraction But for runing the aggregation is suggested to used a message queue that ensure the order of the updates. This allow to be a more robust system where we can try and re-try operations without putting in risk consistency of the data. This event can be listen by a serverless function that can run the aggregated algorithm and saved the result in database. 
+
+The following diagram explains a potential implementation of the system:
+
+
+![arch1](docs/arch1.png)
 
 
 

@@ -1,0 +1,14 @@
+@startuml Web Architecture
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+
+System_Boundary(c1, "MovieC Core System") {
+    Container(website, "Movie-C Website", "Movie-C")
+    Container(api, "MovieC API", "Backend API for accesing RE Database")
+    ContainerDb(db, "Database Movie-C", "RE", "Movie Aggregated information")
+    ContainerDb(bucket, "Data Assets", "files", "Movie Assets")
+    Rel(api, db, "sql", "request movie information")
+    Rel(api, bucket, "s3", "request movie asset")
+}
+
+@enduml

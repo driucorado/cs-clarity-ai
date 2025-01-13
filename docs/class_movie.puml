@@ -1,0 +1,18 @@
+@startuml Class Movie
+
+    class Movie {
+        source : Where is this information coming (IMDB, Rotten Tomatoes)
+        source_id: unique id of the movie for data source
+        title : Original title.
+        country_of_origin: Country of where the movie was made
+        source_rating[] : All the ratings that has the data source for movie
+        registration_date: When was the movie registered in the movie database
+        names[] : All the possible names that movie has in different lenguajes
+        genres[] : Movie genres
+        crating_performance: C-Rating for Performance  
+        crating_soundtrack: C-Rating for Soundtrack
+        crating_screenplay: C-Rating for ScreenPlay
+        ..another metadata
+    }
+
+@enduml

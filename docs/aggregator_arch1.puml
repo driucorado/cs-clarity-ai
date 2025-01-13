@@ -1,0 +1,11 @@
+@startuml Aggregator Architecture
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+System_Boundary(c3, "Movie Data Aggregator") {
+    Container(aggregator_engine, "Aggregator", "Only is executed when there is a changed in the original data source")
+    ContainerDb(movie_update_events, "MQ", "Movie Update Events")
+    Rel(movie_update_events, aggregator_engine, "Get updates for movies")
+}
+
+@enduml
